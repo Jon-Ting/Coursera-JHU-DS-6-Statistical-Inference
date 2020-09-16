@@ -1,0 +1,105 @@
+---
+title: "Exponential Distribution in R vs Central Limit Theorem (Part 2)"
+author: "Jon Ting"
+date: "19/08/2020"
+output: pdf_document
+---
+
+```{r Setup and load libraries, cache=TRUE}
+knitr::opts_chunk$set(warning=FALSE, fig.height=2, fig.width=5)
+set.seed(77)
+library(ggplot2)
+```
+
+# Part 2
+## Overview
+This project explores the exponential distribution in R with a lambda of 0.2 and compare it with the Central Limit Theorem. Part 2 involves the analysis of the ToothGrowth data in the R datasets package, which includes:
+
+1. loading the ToothGrowth data and perform some basic exploratory data analyses.
+2. providing a basic summary of the data.
+3. using confidence intervals and hypothesis tests to compare tooth growth by supp and dose.
+4. stating conclusions and the assumptions needed for the conclusions.
+
+## Load, Summarize and Preprocess Data
+```{r Load and summarize data, cache=TRUE}
+# Load the data
+data(ToothGrowth)
+
+# Understand structure of data
+str(ToothGrowth)
+
+# Summarize the data
+summary(ToothGrowth)
+```
+Since the dose variable has only 2 unique values, it is convertd to a categorical variable
+```{r Preprocessing, cache=TRUE}
+ToothGrowth$dose <- as.factor(ToothGrowth$dose)
+```
+
+## Exploratory Data Analysis
+The following relationships were investigated during exploratory data analysis:
+- Tooth length vs supplement type
+- Tooth length vs dosage
+- Tooth length vs dosage grouped by delivery method
+
+```{r EDA1, cache=TRUE}
+# Relationship 1
+ggplot(data=ToothGrowth, mapping=aes(x=supp, y=len)) + 
+  geom_boxplot(mapping=aes(fill=supp)) + 
+  labs(title="Tooth Length vs Supplement Type", x="Supplement Type", y="Tooth Length")
+```
+
+The boxplots seem to indicate that consumption of OJ generally leads to longer teeth.
+
+```{r EDA2, cache=TRUE}
+# Relationship 2
+ggplot(data=ToothGrowth, mapping=aes(x=dose, y=len)) + 
+  geom_boxplot(mapping=aes(fill=dose)) + 
+  labs(title="Tooth Length vs Dosage", x="Dosage", y="Tooth Length")
+```
+
+These plots point to a proportional relationship between dosage and tooth length.
+
+```{r EDA3, cache=TRUE}
+# Relationship 3
+ggplot(data=ToothGrowth, mapping=aes(x=dose, y=len)) + 
+  geom_boxplot(mapping=aes(fill=dose)) + 
+  labs(title="Tooth Length vs Dosage by Delivery Method", x="Dosage", y="Tooth Length") + 
+  facet_grid(~supp)
+```
+
+These graphs support the previous indications (i.e. OJ is more effective than VC and that greater dosage leads to longer teeth) in general. Hypothesis tests will be conducted next to compare the correlation between tooth growth by supplement type and dosage.
+
+## Compare Tooth Growth by Supp and Dose
+A Welch 2 sample T-test is carried out for tooth growth by supplement type:
+```{r T-test1, cache=TRUE}
+t.test(formula=len~supp, data=ToothGrowth, paired=FALSE)
+```
+A p-value of 0.06 is obtained, which indicates that at the 0.05 significance level, there is lack of evidence to reject the null hypothesis that supplement type has no impact on tooth length. Zero is contained within the 95% confidence interval, which supports the conclusion that there is no relationship between the variables.
+
+Another similar test is carried out for tooth growth by dosage as below:
+```{r T-test2, cache=TRUE}
+# Dose amounts 0.5 and 1.0
+t.test(formula=len~dose, data=subset(ToothGrowth, ToothGrowth$dose %in% c(0.5, 1.0)))
+
+# Dose amounts 0.5 and 2.0
+t.test(formula=len~dose, data=subset(ToothGrowth, ToothGrowth$dose %in% c(0.5, 2.0)))
+
+# Dose amounts 1.0 and 2.0
+t.test(formula=len~dose, data=subset(ToothGrowth, ToothGrowth$dose %in% c(1.0, 2.0)))
+```
+
+All of the tests returned extremely small p-values, meaning that there is evidence at the 0.05 significance level to reject the null hypothesis that changing dosage does not correlate with changes in tooth length. None of the confidence intervals contain zero and all upper bounds are negative values, suggesting that increase in dosage leads to longer teeth.
+
+
+## Conclusions and Assumptions
+The following conclusions were made according to the results of the t-test analyses:
+
+1. the supplement type has no effect on tooth growth.
+2. increased dosages leads to longer teeth.
+
+Under the assumptions that:
+
+1. The samples are representative of the guinea pig population.
+2. The observations are independent from each other.
+3. Each observation is randomly sampled.
